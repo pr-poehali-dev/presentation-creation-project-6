@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -6,13 +6,36 @@ import Icon from '@/components/ui/icon';
 
 const Index = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [presenterMode, setPresenterMode] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   const slides = [
-    { id: 0, title: 'Титульный слайд' },
-    { id: 1, title: 'Содержание' },
-    { id: 2, title: 'Основное содержание' },
-    { id: 3, title: 'Статистика и данные' },
-    { id: 4, title: 'Галерея работ' },
+    { 
+      id: 0, 
+      title: 'Титульный слайд',
+      notes: 'Поприветствовать аудиторию. Представиться. Рассказать о структуре презентации и времени выступления (45 минут).'
+    },
+    { 
+      id: 1, 
+      title: 'Содержание',
+      notes: 'Кратко перечислить все разделы. Обозначить ключевые темы. Упомянуть, что в конце будет время для вопросов.'
+    },
+    { 
+      id: 2, 
+      title: 'Основное содержание',
+      notes: 'Акцентировать внимание на персонализации - это главный тренд. Привести примеры из практики. Упомянуть цифровые платформы.'
+    },
+    { 
+      id: 3, 
+      title: 'Статистика и данные',
+      notes: 'Подчеркнуть рост на 34% - это ключевой показатель. Обратить внимание на успеваемость 92%. Дать время аудитории рассмотреть графики.'
+    },
+    { 
+      id: 4, 
+      title: 'Галерея работ',
+      notes: 'Описать каждый инструмент кратко. Упомянуть VR как инновацию. Завершить призывом к действию и открыть сессию вопросов.'
+    },
   ];
 
   const nextSlide = () => {
@@ -31,16 +54,207 @@ const Index = () => {
     setCurrentSlide(index);
   };
 
+  const togglePresenterMode = () => {
+    setPresenterMode(!presenterMode);
+  };
+
+  const toggleTimer = () => {
+    setIsTimerRunning(!isTimerRunning);
+  };
+
+  const resetTimer = () => {
+    setElapsedTime(0);
+    setIsTimerRunning(false);
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const renderSlideContent = (slideIndex: number) => {
+    switch (slideIndex) {
+      case 0:
+        return <TitleSlide />;
+      case 1:
+        return <ContentSlide goToSlide={goToSlide} />;
+      case 2:
+        return <MainContentSlide />;
+      case 3:
+        return <StatisticsSlide />;
+      case 4:
+        return <GallerySlide />;
+      default:
+        return null;
+    }
+  };
+
+  if (presenterMode) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-6">
+              <h1 className="text-2xl font-bold">Режим докладчика</h1>
+              <div className="flex items-center gap-4">
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <Icon name="Clock" size={20} className="text-blue-400" />
+                    <span className="text-2xl font-mono font-bold text-blue-400">{formatTime(elapsedTime)}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={toggleTimer}
+                        className="bg-gray-700 border-gray-600 hover:bg-gray-600"
+                      >
+                        <Icon name={isTimerRunning ? 'Pause' : 'Play'} size={16} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={resetTimer}
+                        className="bg-gray-700 border-gray-600 hover:bg-gray-600"
+                      >
+                        <Icon name="RotateCcw" size={16} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            <Button
+              onClick={togglePresenterMode}
+              variant="outline"
+              className="bg-gray-800 border-gray-700 hover:bg-gray-700"
+            >
+              <Icon name="Monitor" size={18} className="mr-2" />
+              Обычный режим
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-300">Текущий слайд ({currentSlide + 1}/{slides.length})</h2>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={prevSlide}
+                    disabled={currentSlide === 0}
+                    size="sm"
+                    variant="outline"
+                    className="bg-gray-800 border-gray-700 hover:bg-gray-700"
+                  >
+                    <Icon name="ChevronLeft" size={16} />
+                  </Button>
+                  <Button
+                    onClick={nextSlide}
+                    disabled={currentSlide === slides.length - 1}
+                    size="sm"
+                    className="bg-gradient-to-r from-primary to-secondary"
+                  >
+                    <Icon name="ChevronRight" size={16} />
+                  </Button>
+                </div>
+              </div>
+              <Card className="bg-gray-800 border-gray-700 overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-8 scale-75 origin-top-left" style={{ width: '133.33%', height: 'auto' }}>
+                    {renderSlideContent(currentSlide)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-300 mb-4">Следующий слайд</h2>
+                {currentSlide < slides.length - 1 ? (
+                  <Card className="bg-gray-800 border-gray-700 overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-8 scale-50 origin-top-left opacity-60" style={{ width: '200%', height: 'auto' }}>
+                        {renderSlideContent(currentSlide + 1)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-12 text-center text-gray-500">
+                      <Icon name="CheckCircle" size={48} className="mx-auto mb-4" />
+                      <p className="text-lg">Последний слайд</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                  <Icon name="FileText" size={18} />
+                  Заметки докладчика
+                </h2>
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-6">
+                    <p className="text-gray-300 leading-relaxed">{slides[currentSlide].notes}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                  <Icon name="List" size={18} />
+                  Все слайды
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {slides.map((slide, index) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => goToSlide(index)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        index === currentSlide
+                          ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {index + 1}. {slide.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 overflow-hidden">
+      <div className="absolute top-4 right-4 z-50">
+        <Button
+          onClick={togglePresenterMode}
+          size="sm"
+          variant="outline"
+          className="gap-2 bg-white/80 backdrop-blur-sm hover:bg-white shadow-lg"
+        >
+          <Icon name="Presentation" size={16} />
+          Режим докладчика
+        </Button>
+      </div>
       <div className="relative h-screen flex flex-col">
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="w-full max-w-6xl">
-            {currentSlide === 0 && <TitleSlide />}
-            {currentSlide === 1 && <ContentSlide goToSlide={goToSlide} />}
-            {currentSlide === 2 && <MainContentSlide />}
-            {currentSlide === 3 && <StatisticsSlide />}
-            {currentSlide === 4 && <GallerySlide />}
+            {renderSlideContent(currentSlide)}
           </div>
         </div>
 
